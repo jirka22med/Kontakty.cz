@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moderní galerie obrázků - Vylepšená verze</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    /* Pokročilé animace a efekty */
+    .glass-effect {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    
+    .image-hover-effect {
+      transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .image-hover-effect::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+      transition: left 0.5s;
+      z-index: 1;
+    }
+    
+    .image-hover-effect:hover::before {
+      left: 100%;
+    }
+    
+    .image-hover-effect:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Vylepšené modální okno */
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(8px);
+    }
+    
+    .modal-content {
+      animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    
+    .image-fade-in {
+      animation: imageFadeIn 0.5s ease-out;
+    }
+    
+    @keyframes imageFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    /* Lepší scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: rgba(30, 41, 59, 0.5);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: rgba(59, 130, 246, 0.6);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(59, 130, 246, 0.8);
+    }
+    
+    /* Loading efekt */
+    .skeleton {
+      background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+    
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    /* Hover efekty pro tlačítka */
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+       
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+       
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4);
+    }
+    
+    /* Responsive improvements */
+    @media (max-width: 640px) {
+      .mobile-optimized {
+        padding: 12px;
+      }
+    }
+     
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen text-gray-100 antialiased">
+
+  <!-- Header s vylepšeným designem -->
+  <header class="relative overflow-hidden py-12 sm:py-16">
+    <div class="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm"></div>
+    <div class="container mx-auto px-4 relative z-10">
+      <h1 class="text-4xl sm:text-6xl md:text-7xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400">
+        Galerie Obrázků
+      </h1>
+      <p class="text-center text-gray-300 text-lg sm:text-xl max-w-2xl mx-auto">
+        Objevte krásu moderního webového designu s interaktivní galerií
+      </p>
+      
+      <!-- Statistiky -->
+      <div class="flex justify-center mt-8 space-x-8">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-blue-400" id="totalImages">0</div>
+          <div class="text-sm text-gray-400">Celkem obrázků</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-purple-400" id="viewCount">0</div>
+          <div class="text-sm text-gray-400">Zobrazení</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Ovládací panel -->
+  <div class="container mx-auto px-4 mb-8">
+    <div class="glass-effect rounded-2xl p-4 sm:p-6 max-w-4xl mx-auto">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Vyhledávání -->
+        <div class="flex-1 min-w-64">
+          <div class="relative">
+            <input 
+              type="text" 
+              id="searchInput" 
+              placeholder="Vyhledat podle jména..." 
+              class="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            >
+            <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <!-- Řazení -->
+        <div class="flex items-center space-x-3">
+          <label class="text-sm text-gray-300">Řadit:</label>
+          <select id="sortSelect" class="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="default">Výchozí</option>
+            <option value="name-asc">Jméno A-Z</option>
+            <option value="name-desc">Jméno Z-A</option>
+          </select>
+        </div>
+        
+        <!-- Zobrazení gridu -->
+        <div class="flex items-center space-x-2">
+          <label class="text-sm text-gray-300">Sloupce:</label>
+          <input 
+            type="range" 
+            id="columnsSlider" 
+            min="2" 
+            max="8" 
+            value="5" 
+            class="w-20 accent-blue-500"
+          >
+          <span id="columnsValue" class="text-sm text-blue-400 w-6">5</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading indikátor -->
+  <div id="loadingIndicator" class="text-center py-8">
+    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    <p class="mt-2 text-gray-400">Načítání galerie...</p>
+  </div>
+
+  <!-- Kontejner galerie -->
+  <div class="container mx-auto px-4">
+    <div id="galleryContainer" class="space-y-8">
+      <!-- Obrázky se budou načítat zde -->
+    </div>
+    
+    <!-- Žádné výsledky -->
+    <div id="noResults" class="text-center py-16 hidden">
+      <div class="text-6xl mb-4">🔍</div>
+      <h3 class="text-xl font-semibold text-gray-300 mb-2">Žádné výsledky</h3>
+      <p class="text-gray-400">Zkuste upravit vyhledávací kritéria</p>
+    </div>
+  </div>
+
+  <!-- Vylepšené modální okno -->
+  <div id="imageModal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4 opacity-0 invisible transition-all duration-300" onclick="closeModalOutside(event)">
+    <div class="glass-effect rounded-2xl p-6 max-w-5xl w-full max-h-[95vh] flex flex-col relative modal-content">
+      
+      <!-- Header modálního okna -->
+      <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-600">
+        <div class="flex items-center space-x-4">
+          <h2 id="modalTitle" class="text-xl sm:text-2xl font-semibold text-blue-300"></h2>
+          <span id="modalCounter" class="text-sm text-gray-400 bg-slate-700/50 px-3 py-1 rounded-full"></span>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <!-- Fullscreen tlačítko -->
+           
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               
+            </svg>
+          
+          
+          <!-- Zavřít -->
+          <button onclick="closeModal()" class="text-gray-400 hover:text-red-400 transition-colors p-2 hover:bg-slate-700/50 rounded-lg" title="Zavřít (Esc)">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Obrázek -->
+      <div class="relative flex-grow flex items-center justify-center mb-4 min-h-0">
+        <img id="modalImage" src="" alt="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl image-fade-in">
+        
+        <!-- Loading indikátor pro obrázek -->
+        <div id="imageLoading" class="absolute inset-0 flex items-center justify-center bg-slate-800/50 rounded-lg hidden">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+      
+      <!-- Navigační tlačítka -->
+      <button onclick="changeImage(-1)" class="absolute left-4 top-1/2 -translate-y-1/2 btn-primary p-3 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-blue-400" title="Předchozí (←)">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </button>
+      
+      <button onclick="changeImage(1)" class="absolute right-4 top-1/2 -translate-y-1/2 btn-primary p-3 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-blue-400" title="Další (→)">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+      
+      <!-- Miniaturky pro rychlou navigaci -->
+      <div class="mt-4 pt-4 border-t border-slate-600">
+        <div id="thumbnailsContainer" class="flex space-x-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-slate-700">
+          <!-- Miniaturky se načtou zde -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+ 
+
+  <script>
+    // Data obrázků
+// Data obrázků
+    const images = [
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/AlenaCharvtova.jpg?ver=0", name: "Alena Charvátová"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/AnikaHalasov.jpg?ver=0", name: "Anička Halasová"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/DavidCieslar-1.jpg?ver=0", name: "David Cieslar-1"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/DavidCieslar-2.jpg?ver=0", name: "David Cieslar-2"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/DavidJanda.jpg?ver=0", name: "David Janda"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/DominikVondrek.jpg?ver=0", name: "Dominik Vondráček"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/Emergency.jpg?ver=0", name: "Emergency"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/Euronics-Humpolec.jpg?ver=0", name: "Euronics-Humpolec"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/EvaJklov.jpg?ver=0", name: "Eva Jáklová"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/Filippaek.jpg?ver=0", name: "Filip Špaček"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/FrantaKubk.jpg?ver=0", name: "Franta Kubík"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/HanaJirkov.jpg?ver=0", name: "Hana Jiráková"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/IrenaMedov.jpg?ver=0", name: "Irena Medová"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/JiMed.jpg?ver=0", name: "Jiří Med"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/JiMed-V.3.jpg?ver=0", name: "Jiří Med-V.2"},  
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/MiloMed.jpg?ver=0", name: "Miloš Med"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/JakubSladk.jpg?ver=0", name: "Jakub Sladký"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/JarkaPoton.jpg?ver=0", name: "Jarka Potočná"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/Jindichhlavsk.jpg?ver=0", name: "Jindřich Šťáhlavský"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/LadislavPlil1.jpg?ver=0", name: "Ladislav Plášil 1"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/LadislavPlil2.jpg?ver=0", name: "Ladislav Plášil 2"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/LadislavaLorencov.jpg?ver=0", name: "Ladislava Lorencová"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/OndrejLorenc.jpg?ver=0", name: "Ondrej Lorenc"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/MartinaKyrianov1.jpg?ver=0", name: "Martina Kyrianová 1"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/MartinaKyrianov2.jpg?ver=0", name: "Martina Kyrianová 2"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/RadkaMazancov.jpg?ver=0", name: "Radka Mazancová"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/MatjJedlika.jpg?ver=0", name: "Matěj Jedlička"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/MilanBlaejovskj1.jpg?ver=0", name: "Milan Blažejovskéj 1"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/MilanBlaejovskj2.jpg?ver=0", name: "Milan Blažejovskéj 2"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/Miroslavlechta.jpg?ver=0", name: "Miroslav Šlechta"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/Mudr.JanaStakov.jpg?ver=0", name: "Mudr. Jana Staňková"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/OU-PRS-CERNOVICE.jpg?ver=0", name: "OU-PRS-CERNOVICE"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/PepaSchnircz.jpg?ver=0", name: "Pepa Schnircz"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/PetrCieslar.jpg?ver=0", name: "Petr Cieslar"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/RadimKozel.jpg?ver=0", name: "Radim Kozel"},
+      {src: "https://img40.rajce.idnes.cz/d4002/19/19570/19570685_e21ab6fb70d039d153f5d4370602f091/images/MartinKr.jpg?ver=0", name: "Martin Kýrů"}
+    ];
+
+
+// Globální proměnné
+let currentIndex = 0;
+let filteredImages = [...images];
+let viewCount = 0;
+let currentColumns = 5;
+
+// DOM elementy
+const modal = document.getElementById("imageModal");
+const modalImage = document.getElementById("modalImage");
+const modalTitle = document.getElementById("modalTitle");
+const modalCounter = document.getElementById("modalCounter");
+const galleryContainer = document.getElementById("galleryContainer");
+const searchInput = document.getElementById("searchInput");
+const sortSelect = document.getElementById("sortSelect");
+const columnsSlider = document.getElementById("columnsSlider");
+const columnsValue = document.getElementById("columnsValue");
+const loadingIndicator = document.getElementById("loadingIndicator");
+const noResults = document.getElementById("noResults");
+const thumbnailsContainer = document.getElementById("thumbnailsContainer");
+
+// Inicializace při načtení stránky
+document.addEventListener('DOMContentLoaded', function() {
+  updateStatistics();
+  populateGallery();
+  setupEventListeners();
+  
+  // Skrytí loading indikátoru po načtení
+  setTimeout(() => {
+    loadingIndicator.style.display = 'none';
+  }, 500);
+});
+
+function updateStatistics() {
+  document.getElementById('totalImages').textContent = images.length;
+  document.getElementById('viewCount').textContent = viewCount;
+}
+
+function setupEventListeners() {
+  // Vyhledávání
+  searchInput.addEventListener('input', debounce(handleSearch, 300));
+  
+  // Řazení
+  sortSelect.addEventListener('change', handleSort);
+  
+  // Změna počtu sloupců
+  columnsSlider.addEventListener('input', function() {
+    currentColumns = parseInt(this.value);
+    columnsValue.textContent = currentColumns;
+    populateGallery();
+  });
+  
+  // Klávesové zkratky
+  document.addEventListener('keydown', handleKeyPress);
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+function handleSearch() {
+  const searchTerm = searchInput.value.toLowerCase().trim();
+  
+  if (searchTerm === '') {
+    filteredImages = [...images];
+  } else {
+    filteredImages = images.filter(img => 
+      img.name.toLowerCase().includes(searchTerm)
+    );
+  }
+  
+  populateGallery();
+}
+
+function handleSort() {
+  const sortValue = sortSelect.value;
+  
+  switch(sortValue) {
+    case 'name-asc':
+      filteredImages.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case 'name-desc':
+      filteredImages.sort((a, b) => b.name.localeCompare(a.name));
+      break;
+    default:
+      filteredImages = [...images.filter(img => 
+        img.name.toLowerCase().includes(searchInput.value.toLowerCase().trim())
+      )];
+  }
+  
+  populateGallery();
+}
+
+function createImageElement(imageData, index) {
+  const originalIndex = images.findIndex(img => img.src === imageData.src);
+  
+  const item = document.createElement('div');
+  item.className = 'glass-effect p-4 rounded-xl image-hover-effect cursor-pointer group';
+  item.onclick = () => openModal(originalIndex);
+
+  // Skeleton loading
+  const skeleton = document.createElement('div');
+  skeleton.className = 'skeleton w-full h-40 rounded-lg mb-3';
+
+  const img = document.createElement('img');
+  img.src = imageData.src;
+  img.alt = imageData.name;
+  img.className = 'w-full h-40 object-cover rounded-lg mb-3 transition-all duration-300 group-hover:brightness-110 opacity-0';
+  
+  // Nahrazení skeletonu obrázkem po načtení
+  img.onload = function() {
+    skeleton.style.display = 'none';
+    this.classList.remove('opacity-0');
+    this.classList.add('opacity-100');
+  };
+  
+  img.onerror = function() {
+    skeleton.style.display = 'none';
+    this.src = 'https://placehold.co/300x200/334155/94a3b8?text=Obrázek+nenalezen';
+    this.classList.remove('opacity-0');
+    this.classList.add('opacity-100');
+  };
+  
+  const nameDiv = document.createElement('div');
+  nameDiv.className = 'text-center text-sm font-medium text-blue-300 group-hover:text-blue-200 transition-colors truncate px-2';
+  nameDiv.textContent = imageData.name;
+  nameDiv.title = imageData.name; // Tooltip pro dlouhá jména
+
+  item.appendChild(skeleton);
+  item.appendChild(img);
+  item.appendChild(nameDiv);
+  return item;
+}
+
+function populateGallery() {
+  galleryContainer.innerHTML = '';
+  
+  if (filteredImages.length === 0) {
+    noResults.classList.remove('hidden');
+    return;
+  }
+  
+  noResults.classList.add('hidden');
+  
+  // Responzivní grid podle počtu sloupců
+  const gridDiv = document.createElement('div');
+  const gridClass = getResponsiveGridClass(currentColumns);
+  gridDiv.className = `${gridClass} gap-6`;
+  
+  filteredImages.forEach((imgData, index) => {
+    const galleryItem = createImageElement(imgData, index);
+    // Staggered animation pro každý obrázek
+    galleryItem.style.animationDelay = `${index * 50}ms`;
+    galleryItem.classList.add('animate-fade-in');
+    gridDiv.appendChild(galleryItem);
+  });
+  
+  galleryContainer.appendChild(gridDiv);
+}
+
+function getResponsiveGridClass(columns) {
+  const gridClasses = {
+    2: 'grid grid-cols-1 sm:grid-cols-2',
+    3: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+    4: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4',
+    5: 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5',
+    6: 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6',
+    7: 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7',
+    8: 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8'
+  };
+  
+  return gridClasses[columns] || gridClasses[5];
+}
+
+function openModal(index) {
+  currentIndex = index;
+  viewCount++;
+  updateStatistics();
+  
+  modal.classList.remove('opacity-0', 'invisible');
+  modal.classList.add('opacity-100', 'visible');
+  
+  updateModalContent();
+  createThumbnails();
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  modal.classList.add('opacity-0', 'invisible');
+  modal.classList.remove('opacity-100', 'visible');
+  document.body.style.overflow = 'auto';
+}
+
+function closeModalOutside(event) {
+  if (event.target === modal) {
+    closeModal();
+  }
+}
+
+function updateModalContent() {
+  if (!images[currentIndex]) return;
+  
+  const imageLoading = document.getElementById('imageLoading');
+  imageLoading.classList.remove('hidden');
+  
+  // Přidání loading efektu
+  modalImage.style.opacity = '0.5';
+  
+  const img = new Image();
+  img.onload = function() {
+    modalImage.src = this.src;
+    modalImage.alt = images[currentIndex].name;
+    modalImage.classList.remove('image-fade-in');
+    modalImage.offsetHeight; // Force reflow
+    modalImage.classList.add('image-fade-in');
+    modalImage.style.opacity = '1';
+    imageLoading.classList.add('hidden');
+  };
+  
+  img.onerror = function() {
+    modalImage.src = 'https://placehold.co/800x600/334155/94a3b8?text=Obrázek+nenalezen';
+    modalImage.alt = 'Obrázek nelze načíst';
+    modalImage.style.opacity = '1';
+    imageLoading.classList.add('hidden');
+  };
+  
+  img.src = images[currentIndex].src;
+  
+  modalTitle.textContent = images[currentIndex].name;
+  modalCounter.textContent = `${currentIndex + 1} / ${images.length}`;
+  
+  updateThumbnailSelection();
+}
+
+function changeImage(direction) {
+  currentIndex = (currentIndex + direction + images.length) % images.length;
+  updateModalContent();
+}
+
+function createThumbnails() {
+  thumbnailsContainer.innerHTML = '';
+  
+  images.forEach((img, index) => {
+    const thumb = document.createElement('div');
+    thumb.className = `flex-shrink-0 w-16 h-12 cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+      index === currentIndex ? 'border-blue-500' : 'border-transparent hover:border-blue-300'
+    }`;
+    thumb.onclick = () => {
+      currentIndex = index;
+      updateModalContent();
+    };
+    
+    const thumbImg = document.createElement('img');
+    thumbImg.src = img.src;
+    thumbImg.alt = img.name;
+    thumbImg.className = 'w-full h-full object-cover';
+    thumbImg.onerror = function() {
+      this.src = 'https://placehold.co/64x48/334155/94a3b8?text=?';
+    };
+    
+    thumb.appendChild(thumbImg);
+    thumbnailsContainer.appendChild(thumb);
+  });
+}
+
+function updateThumbnailSelection() {
+  const thumbnails = thumbnailsContainer.children;
+  Array.from(thumbnails).forEach((thumb, index) => {
+    if (index === currentIndex) {
+      thumb.className = thumb.className.replace('border-transparent', 'border-blue-500');
+    } else {
+      thumb.className = thumb.className.replace('border-blue-500', 'border-transparent');
+    }
+  });
+  
+  // Scroll k aktivní miniaturce
+  const activeThumbnail = thumbnails[currentIndex];
+  if (activeThumbnail) {
+    activeThumbnail.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'nearest', 
+      inline: 'center' 
+    });
+  }
+}
+
+ 
+
+function handleKeyPress(event) {
+  if (modal.classList.contains('visible')) {
+    switch(event.key) {
+      case 'ArrowLeft':
+        event.preventDefault();
+        changeImage(-1);
+        break;
+      case 'ArrowRight':
+        event.preventDefault();
+        changeImage(1);
+        break;
+      case 'Escape':
+        event.preventDefault();
+        if (!document.getElementById('fullscreenContainer').classList.contains('hidden')) {
+          exitFullscreen();
+        } else {
+          closeModal();
+        }
+        break;
+      case 'f':
+      case 'F':
+        event.preventDefault();
+        toggleFullscreen();
+        break;
+      case ' ':
+        event.preventDefault();
+        changeImage(1);
+        break;
+    }
+  }
+}
+
+// Touch/swipe podpora pro mobilní zařízení
+let touchStartX = 0;
+let touchEndX = 0;
+
+modalImage.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+});
+
+modalImage.addEventListener('touchend', e => {
+  touchEndX = e.changedTouches[0].screenX;
+  handleSwipe();
+});
+
+function handleSwipe() {
+  const swipeThreshold = 50;
+  const diff = touchStartX - touchEndX;
+  
+  if (Math.abs(diff) > swipeThreshold) {
+    if (diff > 0) {
+      changeImage(1); // Swipe left = next image
+    } else {
+      changeImage(-1); // Swipe right = previous image
+    }
+  }
+}
+
+// Lazy loading pro lepší výkon
+const observerOptions = {
+  threshold: 0.1,
+  rootMargin: '50px'
+};
+
+const imageObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const img = entry.target;
+      if (img.dataset.src) {
+        img.src = img.dataset.src;
+        img.removeAttribute('data-src');
+        imageObserver.unobserve(img);
+      }
+    }
+  });
+}, observerOptions);
+
+// CSS animace pro fade-in efekt
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+`;
+document.head.appendChild(style);
+
+// Preload následujících obrázků pro rychlejší navigaci
+function preloadImages() {
+  const preloadCount = 35; // Kolik obrázků dopředu načíst
+  
+  for (let i = 1; i <= preloadCount; i++) {
+    const nextIndex = (currentIndex + i) % images.length;
+    const prevIndex = (currentIndex - i + images.length) % images.length;
+    
+    [nextIndex, prevIndex].forEach(index => {
+      const img = new Image();
+      img.src = images[index].src;
+    });
+  }
+}
+
+// Spustit preload při otevření modalu
+const originalOpenModal = openModal;
+openModal = function(index) {
+  originalOpenModal(index);
+  setTimeout(preloadImages, 100);
+};
+  </script>
+</body>
+</html>
